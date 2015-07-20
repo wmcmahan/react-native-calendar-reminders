@@ -1,0 +1,9 @@
+{
+  "name": "React-Native-CalendarReminders",
+  "version": "0.0.1",
+  "keywords": "react-native",
+  "main": "RNCalendarReminders.ios.js",
+  "peerDependencies": {
+    "react-native": "^0.7.1"
+  }
+}
