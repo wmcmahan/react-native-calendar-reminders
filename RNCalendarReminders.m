@@ -2,7 +2,17 @@
 #import "RCTConvert.h"
 #import <EventKit/EventKit.h>
 
+@interface RNCalendarReminders ()
+
+@property (nonatomic, strong) EKEventStore *eventStore;
+@property (copy, nonatomic) NSArray *reminders;
+@property (nonatomic) BOOL isAccessToEventStoreGranted;
+
+@end
+
 @implementation RNCalendarReminders
+
+@synthesize bridge = _bridge;
 
 RCT_EXPORT_MODULE()
 
@@ -59,7 +69,7 @@ RCT_EXPORT_MODULE()
 -(void)requestCalendarAccess
 {
   [self.eventStore requestAccessToEntityType:EKEntityTypeReminder completion:^(BOOL granted, NSError *error) {
-       __weak CalendarManager *weakSelf = self;
+       __weak RNCalendarReminders *weakSelf = self;
        dispatch_async(dispatch_get_main_queue(), ^{
          weakSelf.isAccessToEventStoreGranted = granted;
          [weakSelf addNotificationCenter];
@@ -188,7 +198,7 @@ RCT_EXPORT_MODULE()
   NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
   
   [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
-    __weak CalendarManager *weakSelf = self;
+    __weak RNCalendarReminders *weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
       [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"EventReminder"
                                                     body:[weakSelf serializeReminders:reminders]];
@@ -245,7 +255,7 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
   
     [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
       
-      __weak CalendarManager *weakSelf = self;
+      __weak RNCalendarReminders *weakSelf = self;
       dispatch_async(dispatch_get_main_queue(), ^{
         weakSelf.reminders = reminders;
         callback(@[[weakSelf serializeReminders:reminders]]);
