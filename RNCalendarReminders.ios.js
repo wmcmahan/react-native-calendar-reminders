@@ -1,6 +1,6 @@
 'use strict';
 
-var RCTNativeCalendarReminders = require('NativeModules').RCTCalendarReminders;
-var invariant = require('invariant');
+var { NativeModules } = require('react-native');
+var RNCalendarReminders = NativeModules.RNCalendarReminders;
 
-module.exports = RCTNativeCalendarReminders;
+module.exports = RNCalendarReminders;
