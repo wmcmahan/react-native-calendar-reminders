@@ -73,7 +73,7 @@ RCT_EXPORT_MODULE()
 #pragma mark -
 #pragma mark Event Store Accessors
 
-- (void)addReminder:(NSString *)item
+- (void)addReminder:(NSString *)title
           startDate:(NSDateComponents *)startDate
            location:(NSString *)location
 {
@@ -82,7 +82,7 @@ RCT_EXPORT_MODULE()
     }
     
     EKReminder *reminder = [EKReminder reminderWithEventStore:self.eventStore];
-    reminder.title = item;
+    reminder.title = title;
     reminder.location = location;
     reminder.dueDateComponents = startDate;
     reminder.calendar = [self.eventStore defaultCalendarForNewReminders];
@@ -91,16 +91,21 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        // todo: handle error
+        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
+                                                     body:@{@"error": @"Error saving reminder"}];
     }
 }
 
 - (void)editReminder:(EKReminder *)reminder
-                name:(NSString *)name
+               title:(NSString *)title
            startDate:(NSDateComponents *)startDate
             location:(NSString *)location
 {
-    reminder.title = name;
+    if (!self.isAccessToEventStoreGranted) {
+        return;
+    }
+    
+    reminder.title = title;
     reminder.location = location;
     reminder.startDateComponents = startDate;
     
@@ -108,36 +113,34 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        // todo: handle error
+        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
+                                                     body:@{@"error": @"Error saving reminder"}];
     }
 }
 
-- (void)deleteReminder:(NSString *)item
+- (void)deleteReminder:(NSString *)eventId
 {
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"title matches %@", item];
-    NSArray *results = [self.reminders filteredArrayUsingPredicate:predicate];
-    
-    if ([results count]) {
-        [results enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-            NSError *error = nil;
-            BOOL success = [self.eventStore removeReminder:obj commit:NO error:&error];
-            if (!success) {
-                // todo: Handle delete error
-            }
-        }];
-        
-        NSError *commitErr = nil;
-        BOOL success = [self.eventStore commit:&commitErr];
-        if (!success) {
-            //  todo: Handle commit error.
-        }
+    if (!self.isAccessToEventStoreGranted) {
+        return;
     }
+    
+    EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
+
+    NSError *error = nil;
+    BOOL success = [self.eventStore removeReminder:reminder commit:NO error:&error];
+    
+    if (!success) {
+        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
+                                                     body:@{@"error": @"Error removing reminder"}];
+    }
+    
 }
 
 - (NSArray *)serializeReminders:(NSArray *)reminders
 {
     NSMutableArray *serializedReminders = [[NSMutableArray alloc] init];
     
+    static NSString *const id = @"id";
     static NSString *const title = @"title";
     static NSString *const location = @"location";
     static NSString *const startDate = @"startDate";
@@ -152,11 +155,15 @@ RCT_EXPORT_MODULE()
     for (EKReminder *reminder in reminders) {
         
         NSMutableDictionary *formedReminder = [NSMutableDictionary dictionaryWithDictionary:empty_reminder];
-        
+
+        if (reminder.calendarItemIdentifier) {
+            [formedReminder setValue:reminder.calendarItemIdentifier forKey:id];
+        }
+
         if (reminder.title) {
             [formedReminder setValue:reminder.title forKey:title];
         }
-        
+
         if (reminder.location) {
             [formedReminder setValue:reminder.location forKey:location];
         }
@@ -198,7 +205,7 @@ RCT_EXPORT_MODULE()
 
 - (void) dealloc
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)calendarEventReminderReceived:(NSNotification *)notification
@@ -224,40 +231,6 @@ RCT_EXPORT_METHOD(authorizeEventStore:(RCTResponseSenderBlock)callback)
     callback(@[@(self.isAccessToEventStoreGranted)]);
 }
 
-RCT_EXPORT_METHOD(createReminder:(NSString *)name date:(NSDate *)date location:(NSString *)location)
-{
-    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
-    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
-                                                                 fromDate:date];
-    
-    if (name) {
-        [self addReminder:name startDate:startDateComponents location:location];
-    }
-}
-
-RCT_EXPORT_METHOD(updateReminder:(NSString *)lookup
-                  name:(NSString *)name
-                  startDate:(NSDate *)startDate
-                  location:(NSString *)location)
-{
-    
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"title like %@", lookup];
-    NSArray *results = [self.reminders filteredArrayUsingPredicate:predicate];
-    
-    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
-    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
-                                                                 fromDate:startDate];
-    
-    if ([results count]) {
-        [results enumerateObjectsUsingBlock:^(id reminder, NSUInteger idx, BOOL *stop) {
-            [self editReminder:reminder
-                          name:name
-                     startDate:startDateComponents
-                      location:location];
-        }];
-    }
-}
-
 RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
 {
     NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
@@ -271,9 +244,28 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
     }];
 }
 
-RCT_EXPORT_METHOD(removeReminder:(NSString *)item)
+RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details)
 {
-    [self deleteReminder:(NSString *)item];
+    NSString *eventId = [RCTConvert NSString:details[@"eventId"]];
+    NSString *location = [RCTConvert NSString:details[@"location"]];
+    NSDate *startDate = [RCTConvert NSDate:details[@"startDate"]];
+    
+    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
+                                                                 fromDate:startDate];
+
+    if (eventId) {
+        EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
+        [self editReminder:reminder title:title startDate:startDateComponents location:location];
+    
+    } else {
+        [self addReminder:title startDate:startDateComponents location:location];
+    }
+}
+
+RCT_EXPORT_METHOD(removeReminder:(NSString *)eventId)
+{
+    [self deleteReminder:(NSString *)eventId];
 }
 
 @end
