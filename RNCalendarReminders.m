@@ -3,12 +3,15 @@
 #import <EventKit/EventKit.h>
 
 @interface RNCalendarReminders ()
-
 @property (nonatomic, strong) EKEventStore *eventStore;
 @property (copy, nonatomic) NSArray *reminders;
 @property (nonatomic) BOOL isAccessToEventStoreGranted;
-
 @end
+
+static NSString *const _id = @"id";
+static NSString *const _title = @"title";
+static NSString *const _location = @"location";
+static NSString *const _startDate = @"startDate";
 
 @implementation RNCalendarReminders
 
@@ -138,18 +141,14 @@ RCT_EXPORT_MODULE()
 
 - (NSArray *)serializeReminders:(NSArray *)reminders
 {
-    NSMutableArray *serializedReminders = [[NSMutableArray alloc] init];
-    
-    static NSString *const id = @"id";
-    static NSString *const title = @"title";
-    static NSString *const location = @"location";
-    static NSString *const startDate = @"startDate";
     static NSString *const dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z";
     
+    NSMutableArray *serializedReminders = [[NSMutableArray alloc] init];
+    
     NSDictionary *empty_reminder = @{
-        title: @"",
-        location: @"",
-        startDate: @""
+        _title: @"",
+        _location: @"",
+        _startDate: @""
     };
     
     for (EKReminder *reminder in reminders) {
@@ -157,15 +156,15 @@ RCT_EXPORT_MODULE()
         NSMutableDictionary *formedReminder = [NSMutableDictionary dictionaryWithDictionary:empty_reminder];
 
         if (reminder.calendarItemIdentifier) {
-            [formedReminder setValue:reminder.calendarItemIdentifier forKey:id];
+            [formedReminder setValue:reminder.calendarItemIdentifier forKey:_id];
         }
 
         if (reminder.title) {
-            [formedReminder setValue:reminder.title forKey:title];
+            [formedReminder setValue:reminder.title forKey:_title];
         }
 
         if (reminder.location) {
-            [formedReminder setValue:reminder.location forKey:location];
+            [formedReminder setValue:reminder.location forKey:_location];
         }
         
         if (reminder.startDateComponents) {
@@ -181,7 +180,7 @@ RCT_EXPORT_MODULE()
             
             NSDate *reminderStartDate = [calendar dateFromComponents:reminder.startDateComponents];
             
-            [formedReminder setValue:[dateFormatter stringFromDate:reminderStartDate] forKey:startDate];
+            [formedReminder setValue:[dateFormatter stringFromDate:reminderStartDate] forKey:_startDate];
         }
         
         [serializedReminders addObject:formedReminder];
@@ -246,9 +245,9 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
 
 RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details)
 {
-    NSString *eventId = [RCTConvert NSString:details[@"eventId"]];
-    NSString *location = [RCTConvert NSString:details[@"location"]];
-    NSDate *startDate = [RCTConvert NSDate:details[@"startDate"]];
+    NSString *eventId = [RCTConvert NSString:details[_id]];
+    NSString *location = [RCTConvert NSString:details[_location]];
+    NSDate *startDate = [RCTConvert NSDate:details[_startDate]];
     
     NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
     NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
