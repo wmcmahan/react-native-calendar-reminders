@@ -77,7 +77,7 @@ RCT_EXPORT_MODULE()
 #pragma mark Event Store Accessors
 
 - (void)addReminder:(NSString *)title
-          startDate:(NSDateComponents *)startDate
+          startDate:(NSDateComponents *)startDateComponents
            location:(NSString *)location
 {
     if (!self.isAccessToEventStoreGranted) {
@@ -87,7 +87,9 @@ RCT_EXPORT_MODULE()
     EKReminder *reminder = [EKReminder reminderWithEventStore:self.eventStore];
     reminder.title = title;
     reminder.location = location;
-    reminder.dueDateComponents = startDate;
+    reminder.startDateComponents = startDateComponents;
+    reminder.dueDateComponents = startDateComponents;
+    reminder.completed = NO;
     reminder.calendar = [self.eventStore defaultCalendarForNewReminders];
     
     NSError *error = nil;
@@ -101,7 +103,7 @@ RCT_EXPORT_MODULE()
 
 - (void)editReminder:(EKReminder *)reminder
                title:(NSString *)title
-           startDate:(NSDateComponents *)startDate
+           startDate:(NSDateComponents *)startDateComponents
             location:(NSString *)location
 {
     if (!self.isAccessToEventStoreGranted) {
@@ -110,7 +112,9 @@ RCT_EXPORT_MODULE()
     
     reminder.title = title;
     reminder.location = location;
-    reminder.startDateComponents = startDate;
+    reminder.startDateComponents = startDateComponents;
+    reminder.dueDateComponents = startDateComponents;
+    reminder.completed = NO;
     
     NSError *error = nil;
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
@@ -171,11 +175,9 @@ RCT_EXPORT_MODULE()
             NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
             NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
             
-            NSLocale *enUSPOSIXLocale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
             NSTimeZone *timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
             
             [dateFormatter setTimeZone:timeZone];
-            [dateFormatter setLocale:enUSPOSIXLocale];
             [dateFormatter setDateFormat:dateFormat];
             
             NSDate *reminderStartDate = [calendar dateFromComponents:reminder.startDateComponents];
@@ -250,9 +252,9 @@ RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details
     NSDate *startDate = [RCTConvert NSDate:details[_startDate]];
     
     NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
-    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
+    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit)
                                                                  fromDate:startDate];
-
+    
     if (eventId) {
         EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
         [self editReminder:reminder title:title startDate:startDateComponents location:location];
