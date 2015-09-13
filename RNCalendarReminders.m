@@ -80,6 +80,7 @@ RCT_EXPORT_MODULE()
           startDate:(NSDateComponents *)startDateComponents
            location:(NSString *)location
 {
+
     if (!self.isAccessToEventStoreGranted) {
         return;
     }
@@ -98,6 +99,9 @@ RCT_EXPORT_MODULE()
     if (!success) {
         [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
                                                      body:@{@"error": @"Error saving reminder"}];
+    } else {
+        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderSaved"
+                                                     body:reminder.calendarItemIdentifier];
     }
 }
 
@@ -112,8 +116,8 @@ RCT_EXPORT_MODULE()
     
     reminder.title = title;
     reminder.location = location;
-    reminder.startDateComponents = startDateComponents;
     reminder.dueDateComponents = startDateComponents;
+    reminder.startDateComponents = startDateComponents;
     reminder.completed = NO;
     
     NSError *error = nil;
@@ -122,6 +126,9 @@ RCT_EXPORT_MODULE()
     if (!success) {
         [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
                                                      body:@{@"error": @"Error saving reminder"}];
+    } else {
+        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderSaved"
+                                                     body:reminder.calendarItemIdentifier];
     }
 }
 
@@ -134,7 +141,7 @@ RCT_EXPORT_MODULE()
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
 
     NSError *error = nil;
-    BOOL success = [self.eventStore removeReminder:reminder commit:NO error:&error];
+    BOOL success = [self.eventStore removeReminder:reminder commit:YES error:&error];
     
     if (!success) {
         [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
