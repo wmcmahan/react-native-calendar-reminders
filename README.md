@@ -32,7 +32,7 @@ RNCalendarReminders.fetchAllReminders((reminders) => {});
 Create new reminder
 
 ```javascript
-RNCalendarReminders.createReminder(title, startDate, location);
+RNCalendarReminders.saveReminder(title, {eventId: eventId', location: location, startDate: "2016-10-01T09:45:00.000UTC"});
 ```
 
 Update existing reminder
