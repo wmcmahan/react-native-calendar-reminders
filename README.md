@@ -17,26 +17,27 @@ Require Native Module:
 var RNCalendarReminders = require('react-native').NativeModules.RNCalendarReminders;
 ```
 
-Request authorization to IOS EventStore
+#### Request authorization to IOS EventStore
 
 ```javascript
 RNCalendarReminders.authorizeEventStore((error, auth) => {});
 ```
 
-Fetch all current reminders from EventStore
+#### Fetch all current reminders from EventStore
 
 ```javascript
-RNCalendarReminders.fetchAllReminders((reminders) => {});
+RNCalendarReminders.fetchAllReminders(reminders => {});
 ```
 
-Create new reminder
+#### Create reminder
 
 ```javascript
-RNCalendarReminders.saveReminder(title, {eventId: eventId', location: location, startDate: "2016-10-01T09:45:00.000UTC"});
+RNCalendarReminders.saveReminder(title, {location: location, startDate: "2016-10-01T09:45:00.000UTC"});
 ```
 
-Update existing reminder
+#### Update reminder
+Give an **eventId** to update and existing reminder.
 
 ```javascript
-RNCalendarReminders.updateReminder(previousTitle, newtitle, startDate, location);
+RNCalendarReminders.saveReminder(title, {eventId: eventId, location: location, startDate: "2016-10-02T09:45:00.000UTC"});
 ```
