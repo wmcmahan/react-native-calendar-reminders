@@ -1,14 +1,30 @@
 {
-  "name": "React-Native-CalendarReminders",
+  "name": "react-native-calendar-reminders",
   "version": "0.0.1",
-  "keywords": "react-native",
+  "author": "Will McMahan",
+  "license": "MIT",
   "main": "RNCalendarReminders.ios.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Will McMahan",
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wmcmahan/React-Native-CalendarReminders"
+  },
+  "bugs": {
+    "url": "https://github.com/wmcmahan/React-Native-CalendarReminders/issues"
+  },
+  "homepage": "https://github.com/wmcmahan/React-Native-CalendarReminders",
+  "description": "React Native module for IOS EventKit Reminders",
+  "keywords": [
+    "react-native",
+    "react-component",
+    "ios",
+    "eventkit",
+    "reminders",
+    "calendar-reminders"
+  ],
   "peerDependencies": {
-    "react-native": "0.7.1"
+    "react-native": ">=0.8.0"
   }
 }
