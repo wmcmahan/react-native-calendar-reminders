@@ -4,7 +4,7 @@ React Native Module for IOS Calendar Reminders
 
 ## Install
 ```
-npm install react-native-calendarReminders
+npm install react-native-calendar-reminders
 ```
 Then add RNCalendarReminders to project libraries.
 
@@ -24,11 +24,13 @@ The **EventKit.framework** will also need to be added to the project.
 RNCalendarReminders.authorizeEventStore((error, auth) => {...});
 ```
 
+
 #### Fetch all current reminders from EventStore
 
 ```javascript
 RNCalendarReminders.fetchAllReminders(reminders => {...});
 ```
+
 
 #### Create reminder
 
@@ -40,8 +42,10 @@ RNCalendarReminders.saveReminder(title, {
 });
 ```
 
+
 #### Update reminder
 Give an **eventId** to update and existing reminder.
+
 
 ```javascript
 RNCalendarReminders.saveReminder(title, {
@@ -51,6 +55,7 @@ RNCalendarReminders.saveReminder(title, {
   startDate: '2016-10-02T09:45:00.000UTC'
 });
 ```
+
 
 #### Remove reminder
 
