@@ -6,43 +6,41 @@ React Native Module for IOS Calendar Reminders
 ```
 npm install react-native-calendar-reminders
 ```
-Then add RNCalendarReminders to project libraries.
-
+Then add `RNCalendarReminders`, as well as `EventKit.framework` to project libraries.
 
 ## Usage
 
-Require Native Module:
+Require the `react-native-calendar-reminders` module.
 ```javascript
 var RNCalendarReminders = require('react-native-calendar-reminders');
 ```
-The **EventKit.framework** will also need to be added to the project.
+
+## Properties
+
+| Property        | Value            | Description |
+| --------------- |------------------| ----------- |
+| id              | String (read only)             | Unique id for the reminder. |
+| title           | String             | The title for the reminder. |
+| startDate       | Date             | The start date of the reminder. |
+| location        | String           | The location associated with the reminder. |
+| notes           | String           | The notes associated with the reminder. |
+| alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
 
 
-#### Request authorization to IOS EventStore
+## Request authorization to IOS EventStore
+Authorization must be granted before accessing reminders.
 
 ```javascript
 RNCalendarReminders.authorizeEventStore((error, auth) => {...});
 ```
 
 
-#### Fetch all current reminders from EventStore
+## Fetch all reminders from EventStore
 
 ```javascript
 RNCalendarReminders.fetchAllReminders(reminders => {...});
 ```
-
-#### Reminder Properties
-
-| Property        | Value            | Description |
-| --------------- |------------------| ----------- |
-| id              | String (read only)             | Unique id for the reminder. |
-| title           | String             | The title for the reminder. |
-| startDate       | Date             | The start date of the task. |
-| location        | String           | The location associated with the reminder. |
-| notes           | String           | The notes associated with the reminder. |
-| alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
-
-#### Create reminder
+## Create reminder
 
 ```
 RNCalendarReminders.saveReminder(title, settings);
@@ -56,16 +54,16 @@ RNCalendarReminders.saveReminder('title', {
 });
 ```
 
-#### Create reminder with alarms
+## Create reminder with alarms
 
-###### Alarm options:
+### Alarm options:
 
 | Property        | Value            | Description |
 | --------------- |------------------| ----------- |
 | date           | Date or Number    | If a Date is given, an alarm will be set with an absolute date. If a Number is given, an alarm will be set with a relative offset (in minutes) from the start date. |
 | structuredLocation | Object             | The location to trigger an alarm. |
 
-###### Alarm location properties:
+### Alarm structuredLocation properties:
 
 | Property        | Value            | Description |
 | --------------- |------------------| ----------- |
@@ -86,7 +84,7 @@ RNCalendarReminders.saveReminder('title', {
   }]
 });
 ```
-Example with location:
+Example with structuredLocation:
 
 ```javascript
 RNCalendarReminders.saveReminder('title', {
@@ -107,8 +105,8 @@ RNCalendarReminders.saveReminder('title', {
 });
 ```
 
-#### Update reminder
-Give an **reminder ID** to update and existing reminder.
+## Update reminder
+Give the unique reminder **id** to update an existing reminder.
 
 ```javascript
 RNCalendarReminders.saveReminder('title', {
@@ -119,8 +117,8 @@ RNCalendarReminders.saveReminder('title', {
 });
 ```
 
-#### Update reminder alarms
-Give an **reminder ID** and **array of alarm options** to update and existing reminder. Note: This will overwrite any alarms already set on the reminder.
+## Update reminder alarms
+Give the unique reminder **id** and an array of alarm **options** to update an existing reminder. Note: This will overwrite any alarms already set on the reminder.
 
 ```javascript
 RNCalendarReminders.addAlarms('id', [{
@@ -131,8 +129,8 @@ RNCalendarReminders.addAlarms('id', [{
 }]);
 ```
 
-#### Update reminder with added alarm
-Give an **reminder ID** and **alarm options object** to add new alarm.
+## Update reminder with added alarm
+Give the unique reminder **id** and alarm **options** object to add new alarm.
 
 ```javascript
 RNCalendarReminders.addAlarm('id', {
@@ -143,8 +141,9 @@ RNCalendarReminders.addAlarm('id', {
 });
 ```
 
-#### Remove reminder
+## Remove reminder
+Give the unique reminder **id** to remove an existing reminder.
 
 ```javascript
-RNCalendarReminders.removeReminder(eventId);
+RNCalendarReminders.removeReminder('id');
 ```
