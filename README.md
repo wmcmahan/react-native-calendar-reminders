@@ -1,4 +1,4 @@
-# React-Native-CalendarReminders
+# React-Native-Calendar-Reminders
 React Native Module for IOS Calendar Reminders
 
 
@@ -63,7 +63,7 @@ RNCalendarReminders.saveReminder('title', {
 | Property        | Value            | Description |
 | --------------- |------------------| ----------- |
 | date           | Date or Number    | If a Date is given, an alarm will be set with an absolute date. If a Number is given, an alarm will be set with a relative offset (in minutes) from the start date. |
-| location | Object             | The start date of the task. |
+| structuredLocation | Object             | The location to trigger an alarm. |
 
 ###### Alarm location properties:
 
@@ -94,7 +94,7 @@ RNCalendarReminders.saveReminder('title', {
   notes: 'notes',
   startDate: '2016-10-01T09:45:00.000UTC',
   alarms: [{
-    location: {
+    structuredLocation: {
       title: 'title',
       proximity: 'enter',
       radius: 500,
@@ -123,19 +123,19 @@ RNCalendarReminders.saveReminder('title', {
 Give an **reminder ID** and **array of alarm options** to update and existing reminder. Note: This will overwrite any alarms already set on the reminder.
 
 ```javascript
-RNCalendarReminders.addReminderAlarms({
+RNCalendarReminders.addAlarms('id', [{
   id: 'id',
   alarms: [{
     date: -2 // or absolute date
   }]
-});
+}]);
 ```
 
 #### Update reminder with added alarm
 Give an **reminder ID** and **alarm options object** to add new alarm.
 
 ```javascript
-RNCalendarReminders.addReminderAlarm({
+RNCalendarReminders.addAlarm('id', {
   id: 'id',
   alarms: {
     date: -3 // or absolute date
