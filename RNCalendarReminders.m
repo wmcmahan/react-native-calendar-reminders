@@ -263,13 +263,9 @@ RCT_EXPORT_MODULE()
 -(EKRecurrenceFrequency)frequencyMatchingName:(NSString *)name
 {
     // Default value
-    EKRecurrenceFrequency recurrence;
+    EKRecurrenceFrequency recurrence = EKRecurrenceFrequencyDaily;
     
-    if ([name isEqualToString:@"daily"])
-    {
-        recurrence = EKRecurrenceFrequencyDaily;
-    }
-    else if ([name isEqualToString:@"weekly"])
+    if ([name isEqualToString:@"weekly"])
     {
         recurrence = EKRecurrenceFrequencyWeekly;
     }
@@ -280,11 +276,32 @@ RCT_EXPORT_MODULE()
     else if ([name isEqualToString:@"yearly"])
     {
         recurrence = EKRecurrenceFrequencyYearly;
-    } else {
-        recurrence = false;
     }
-
+    
     return recurrence;
+}
+
+
+// Create a recurrence rule
+-(EKRecurrenceRule *)createRecurrenceRule:(NSString *)frequency
+{
+    // Not doing BiWeekly, BiMonthly, etc reminders... at this time.
+    NSUInteger interval = 1;
+    
+    // Check that frequency is valid simple recurrence string.
+    BOOL validFrequency = [@[@"daily", @"weekly", @"monthly", @"yearly"] containsObject:frequency];
+    if (!validFrequency) {
+        return NULL;
+    }
+    
+    // Fetch the EKRecurrenceFrequency value matching frequency, otherwise.
+    EKRecurrenceFrequency recurrenceFrequency = [self frequencyMatchingName:frequency];
+    
+    // Create a recurrence rule using the above recurrenceFrequency and interval
+    EKRecurrenceRule *rule = [[EKRecurrenceRule alloc] initRecurrenceWithFrequency:recurrenceFrequency
+                                                                          interval:interval
+                                                                               end:nil];
+    return rule;
 }
 
 // Return a name for the EKRecurrenceFrequency.
@@ -308,31 +325,13 @@ RCT_EXPORT_MODULE()
     else if (frequency == EKRecurrenceFrequencyYearly)
     {
         name = @"yearly";
+    } else {
+        name = NULL;
     }
     
     return name;
 }
 
-
-// Create a recurrence rule
--(EKRecurrenceRule *)createRecurrenceRule:(NSString *)frequency
-{
-    // Not doing BiWeekly, BiMonthly, etc reminders... at this time.
-    NSUInteger interval = 1;
-    
-    // Fetch the EKRecurrenceFrequency value matching frequency, otherwise.
-    EKRecurrenceFrequency recurrenceFrequency = [self frequencyMatchingName:frequency];
-    
-    if (recurrenceFrequency) {
-        // Create a recurrence rule using the above recurrenceFrequency and interval
-        EKRecurrenceRule *rule = [[EKRecurrenceRule alloc] initRecurrenceWithFrequency:recurrenceFrequency
-                                                                              interval:interval
-                                                                                   end:nil];
-        return rule;
-    } else {
-        return false;
-    }
-}
 
 
 #pragma mark -
