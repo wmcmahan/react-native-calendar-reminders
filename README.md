@@ -25,6 +25,7 @@ var RNCalendarReminders = require('react-native-calendar-reminders');
 | location        | String           | The location associated with the reminder. |
 | notes           | String           | The notes associated with the reminder. |
 | alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
+| recurrence      | String           | The simple recurrence frequency of the reminder ['daily', 'weekly', 'monthly', 'yearly']. |
 
 
 ## Request authorization to IOS EventStore
@@ -102,6 +103,20 @@ RNCalendarReminders.saveReminder('title', {
       }
     }
   }]
+});
+```
+
+Example with recurrence:
+
+```javascript
+RNCalendarReminders.saveReminder('title', {
+  location: 'location',
+  notes: 'notes',
+  startDate: '2016-10-01T09:45:00.000UTC',
+  alarms: [{
+    date: -1 // or absolute date
+  }],
+  recurrence: 'daily'
 });
 ```
 
