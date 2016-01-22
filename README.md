@@ -18,7 +18,7 @@ var RNCalendarReminders = require('react-native-calendar-reminders');
 ## Properties
 
 | Property        | Value            | Description |
-| --------------- |------------------| ----------- |
+| :--------------- | :---------------- | :----------- |
 | id              | String (read only)             | Unique id for the reminder. |
 | title           | String             | The title for the reminder. |
 | startDate       | Date             | The start date of the reminder. |
@@ -60,14 +60,14 @@ RNCalendarReminders.saveReminder('title', {
 ### Alarm options:
 
 | Property        | Value            | Description |
-| --------------- |------------------| ----------- |
+| :--------------- | :------------------| :----------- |
 | date           | Date or Number    | If a Date is given, an alarm will be set with an absolute date. If a Number is given, an alarm will be set with a relative offset (in minutes) from the start date. |
 | structuredLocation | Object             | The location to trigger an alarm. |
 
 ### Alarm structuredLocation properties:
 
 | Property        | Value            | Description |
-| --------------- |------------------| ----------- |
+| :--------------- | :------------------| :----------- |
 | title           | String  | The title of the location.|
 | proximity | String             | A value indicating how a location-based alarm is triggered. Possible values: `enter`, `leave`, `none`. |
 | radius | Number             | A minimum distance from the core location that would trigger the reminder's alarm. |
