@@ -325,8 +325,6 @@ RCT_EXPORT_MODULE()
     else if (frequency == EKRecurrenceFrequencyYearly)
     {
         name = @"yearly";
-    } else {
-        name = NULL;
     }
     
     return name;
@@ -434,7 +432,7 @@ RCT_EXPORT_MODULE()
         }
         
         if (reminder.recurrenceRules) {
-            if ([reminder.recurrenceRules count] > 0) {
+            if (reminder.hasRecurrenceRules) {
                 NSString *recurrence = [self nameMatchingFrequency:reminder.recurrenceRules[0].frequency];
                 [formedReminder setValue:recurrence forKey:_recurrence];
             }
