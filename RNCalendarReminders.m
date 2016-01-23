@@ -396,7 +396,7 @@ RCT_EXPORT_MODULE()
             NSDate *reminderStartDate = [calendar dateFromComponents:reminder.startDateComponents];
             [formedReminder setValue:[dateFormatter stringFromDate:reminderStartDate] forKey:_startDate];
         }
-        
+
         if (reminder.hasRecurrenceRules) {
             NSString *frequencyType = [self nameMatchingFrequency:[[reminder.recurrenceRules objectAtIndex:0] frequency]];
             [formedReminder setValue:frequencyType forKey:_recurrence];
