@@ -10,9 +10,12 @@ Then add `RNCalendarReminders`, as well as `EventKit.framework` to project libra
 
 ## Usage
 
-Require the `react-native-calendar-reminders` module.
+Require the `react-native-calendar-reminders` module and React Native's `NativeAppEventEmitter` module.
 ```javascript
-var RNCalendarReminders = require('react-native-calendar-reminders');
+import React from 'react-native';
+import RNCalendarReminders from 'react-native-calendar-reminders';
+
+const {NativeAppEventEmitter} = React;
 ```
 
 ## Properties
@@ -27,6 +30,18 @@ var RNCalendarReminders = require('react-native-calendar-reminders');
 | alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
 | recurrence      | String           | The simple recurrence frequency of the reminder ['daily', 'weekly', 'monthly', 'yearly']. |
 
+## Events
+When adding, removing, or editing reminders, an app event will be dispatched with the name `EventReminder` along with the collection of reminders on the body.
+
+```javascript
+componentWillMount () {
+  this.eventEmitter = NativeAppEventEmitter.addListener('EventReminder', (reminders) => {...});
+}
+
+componentWillUnmount () {
+  this.eventEmitter.remove();
+}
+```
 
 ## Request authorization to IOS EventStore
 Authorization must be granted before accessing reminders.
