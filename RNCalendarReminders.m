@@ -153,10 +153,10 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
+        [self.bridge.eventDispatcher sendDeviceEventWithName:@"EventReminderError"
                                                      body:@{@"error": @"Error saving reminder"}];
     } else {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderSaved"
+        [self.bridge.eventDispatcher sendDeviceEventWithName:@"EventReminderSaved"
                                                      body:reminder.calendarItemIdentifier];
     }
 }
@@ -173,7 +173,7 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore removeReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
+        [self.bridge.eventDispatcher sendDeviceEventWithName:@"EventReminderError"
                                                      body:@{@"error": @"Error removing reminder"}];
     }
 }
@@ -427,7 +427,7 @@ RCT_EXPORT_MODULE()
     __weak RNCalendarReminders *weakSelf = self;
     [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"EventReminder"
+            [weakSelf.bridge.eventDispatcher sendDeviceEventWithName:@"EventReminder"
                                                              body:[weakSelf serializeReminders:reminders]];
         });
     }];
