@@ -12,9 +12,11 @@ static NSString *const _id = @"id";
 static NSString *const _title = @"title";
 static NSString *const _location = @"location";
 static NSString *const _startDate = @"startDate";
+static NSString *const _completionDate = @"completionDate";
 static NSString *const _notes = @"notes";
 static NSString *const _alarms = @"alarms";
 static NSString *const _recurrence = @"recurrence";
+static NSString *const _isCompleted = @"isCompleted";
 
 @implementation RNCalendarReminders
 
@@ -44,36 +46,25 @@ RCT_EXPORT_MODULE()
 #pragma mark -
 #pragma mark Event Store Authorization
 
-- (void)authorizationStatusForAccessEventStore
+- (NSString *)authorizationStatusForEventStore
 {
-    EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
+    EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeEvent];
     
     switch (status) {
         case EKAuthorizationStatusDenied:
-        case EKAuthorizationStatusRestricted: {
             self.isAccessToEventStoreGranted = NO;
-            break;
-        }
+            return @"denied";
+        case EKAuthorizationStatusRestricted:
+            self.isAccessToEventStoreGranted = NO;
+            return @"restricted";
         case EKAuthorizationStatusAuthorized:
-            self.isAccessToEventStoreGranted = YES;
             [self addNotificationCenter];
-            break;
+            self.isAccessToEventStoreGranted = YES;
+            return @"authorized";
         case EKAuthorizationStatusNotDetermined: {
-            [self requestCalendarAccess];
-            break;
+            return @"undetermined";
         }
     }
-}
-
--(void)requestCalendarAccess
-{
-    __weak RNCalendarReminders *weakSelf = self;
-    [self.eventStore requestAccessToEntityType:EKEntityTypeReminder completion:^(BOOL granted, NSError *error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            weakSelf.isAccessToEventStoreGranted = granted;
-            [weakSelf addNotificationCenter];
-        });
-    }];
 }
 
 #pragma mark -
@@ -85,6 +76,7 @@ RCT_EXPORT_MODULE()
               notes:(NSString *)notes
              alarms:(NSArray *)alarms
          recurrence:(NSString *)recurrence
+        isCompleted:(BOOL)isCompleted
 {
     if (!self.isAccessToEventStoreGranted) {
         return;
@@ -96,7 +88,7 @@ RCT_EXPORT_MODULE()
     reminder.location = location;
     reminder.dueDateComponents = startDateComponents;
     reminder.startDateComponents = startDateComponents;
-    reminder.completed = NO;
+    reminder.completed = isCompleted;
     reminder.notes = notes;
     
     if (alarms) {
@@ -121,6 +113,7 @@ RCT_EXPORT_MODULE()
                notes:(NSString *)notes
               alarms:(NSArray *)alarms
           recurrence:(NSString *)recurrence
+         isCompleted:(BOOL)isCompleted
 {
     if (!self.isAccessToEventStoreGranted) {
         return;
@@ -130,6 +123,7 @@ RCT_EXPORT_MODULE()
     reminder.location = location;
     reminder.dueDateComponents = startDateComponents;
     reminder.startDateComponents = startDateComponents;
+    reminder.completed = isCompleted;
     reminder.notes = notes;
     
     if (alarms) {
@@ -153,10 +147,10 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
-                                                     body:@{@"error": @"Error saving reminder"}];
+        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveError"
+                                                     body:@{@"error": [error.userInfo valueForKey:@"NSLocalizedDescription"]}];
     } else {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderSaved"
+        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveSuccess"
                                                      body:reminder.calendarItemIdentifier];
     }
 }
@@ -173,8 +167,8 @@ RCT_EXPORT_MODULE()
     BOOL success = [self.eventStore removeReminder:reminder commit:YES error:&error];
     
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"EventReminderError"
-                                                     body:@{@"error": @"Error removing reminder"}];
+        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveError"
+                                                     body:@{@"error": [error.userInfo valueForKey:@"NSLocalizedDescription"]}];
     }
 }
 
@@ -309,6 +303,7 @@ RCT_EXPORT_MODULE()
                                     _title: @"",
                                     _location: @"",
                                     _startDate: @"",
+                                    _completionDate: @"",
                                     _notes: @"",
                                     _alarms: @[],
                                     _recurrence: @""
@@ -324,6 +319,8 @@ RCT_EXPORT_MODULE()
     for (EKReminder *reminder in reminders) {
         
         NSMutableDictionary *formedReminder = [NSMutableDictionary dictionaryWithDictionary:emptyReminder];
+        
+        [formedReminder setValue:@(reminder.isCompleted) forKey:@"isCompleted"];
         
         if (reminder.calendarItemIdentifier) {
             [formedReminder setValue:reminder.calendarItemIdentifier forKey:_id];
@@ -396,7 +393,11 @@ RCT_EXPORT_MODULE()
             NSDate *reminderStartDate = [calendar dateFromComponents:reminder.startDateComponents];
             [formedReminder setValue:[dateFormatter stringFromDate:reminderStartDate] forKey:_startDate];
         }
-
+        
+        if (reminder.completionDate) {
+            [formedReminder setValue:[dateFormatter stringFromDate:reminder.completionDate] forKey:_completionDate];
+        }
+        
         if (reminder.hasRecurrenceRules) {
             NSString *frequencyType = [self nameMatchingFrequency:[[reminder.recurrenceRules objectAtIndex:0] frequency]];
             [formedReminder setValue:frequencyType forKey:_recurrence];
@@ -427,7 +428,7 @@ RCT_EXPORT_MODULE()
     __weak RNCalendarReminders *weakSelf = self;
     [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"EventReminder"
+            [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"remindersChanged"
                                                              body:[weakSelf serializeReminders:reminders]];
         });
     }];
@@ -441,10 +442,26 @@ RCT_EXPORT_MODULE()
 #pragma mark -
 #pragma mark RCT Exports
 
+RCT_EXPORT_METHOD(authorizationStatus:(RCTResponseSenderBlock)callback)
+{
+    NSString *status = [self authorizationStatusForEventStore];
+    callback(@[@{@"status": status}]);
+}
+
 RCT_EXPORT_METHOD(authorizeEventStore:(RCTResponseSenderBlock)callback)
 {
-    [self authorizationStatusForAccessEventStore];
-    callback(@[@(self.isAccessToEventStoreGranted)]);
+    __weak RNCalendarReminders *weakSelf = self;
+    [self.eventStore requestAccessToEntityType:EKEntityTypeReminder completion:^(BOOL granted, NSError *error) {
+        NSString *status = granted ? @"authorized" : @"denied";
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSString *status = granted ? @"authorized" : @"denied";
+            weakSelf.isAccessToEventStoreGranted = granted;
+            if (!error) {
+                [weakSelf addNotificationCenter];
+                callback(@[@{@"status": status}]);
+            }
+        });
+    }];
 }
 
 RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
@@ -468,6 +485,7 @@ RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details
     NSString *notes = [RCTConvert NSString:details[_notes]];
     NSArray *alarms = [RCTConvert NSArray:details[_alarms]];
     NSString *recurrence = [RCTConvert NSString:details[_recurrence]];
+    BOOL *isCompleted = [RCTConvert BOOL:details[_isCompleted]];
     
     NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
     NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit)
@@ -481,7 +499,8 @@ RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details
                   location:location
                      notes:notes
                     alarms:alarms
-                recurrence:recurrence];
+                recurrence:recurrence
+               isCompleted:isCompleted];
         
     } else {
         [self addReminder:title
@@ -489,7 +508,8 @@ RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details
                  location:location
                     notes:notes
                    alarms:alarms
-               recurrence:recurrence];
+               recurrence:recurrence
+              isCompleted:isCompleted];
     }
 }
 

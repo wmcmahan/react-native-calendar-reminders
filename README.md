@@ -25,10 +25,12 @@ const {NativeAppEventEmitter} = React;
 | id              | String (read only)             | Unique id for the reminder. |
 | title           | String             | The title for the reminder. |
 | startDate       | Date             | The start date of the reminder. |
+| completionDate  | Date (read only) | The date on which the reminder was completed. |
 | location        | String           | The location associated with the reminder. |
 | notes           | String           | The notes associated with the reminder. |
 | alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
 | recurrence      | String           | The simple recurrence frequency of the reminder ['daily', 'weekly', 'monthly', 'yearly']. |
+| isCompleted     | Bool             | A Boolean value determining whether or not the reminder is marked completed. |
 
 ## Events
 When adding, removing, or editing reminders, an app event will be dispatched with the name `EventReminder` along with the collection of reminders on the body.
@@ -43,11 +45,38 @@ componentWillUnmount () {
 }
 ```
 
+# Events
+
+| Name        | Body            | Description |
+| :--------------- | :---------------- | :----------- |
+| remindersChanged      | reminders           | List of all reminders in the store |
+| reminderSaveSuccess   | reminder id         | The ID of the successfully saved reminder |
+| reminderSaveError     | error message       | Error that occurred during save. |
+
+Example:
+
+```javascript
+componentWillMount () {
+  this.eventEmitter = NativeAppEventEmitter.addListener('remindersChanged', reminders => {...});
+}
+
+componentWillUnmount () {
+  this.eventEmitter.remove();
+}
+```
+
+## Get authorization status for IOS EventStore
+Finds the current authorization status: "denied", "restricted", "authorized" or "undetermined".
+
+```javascript
+RNCalendarReminders.authorizationStatus(({status}) => {...});
+```
+
 ## Request authorization to IOS EventStore
 Authorization must be granted before accessing reminders.
 
 ```javascript
-RNCalendarReminders.authorizeEventStore((error, auth) => {...});
+RNCalendarReminders.authorizeEventStore(({status}) => {...});
 ```
 
 
