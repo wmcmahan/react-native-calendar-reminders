@@ -33,19 +33,6 @@ const {NativeAppEventEmitter} = React;
 | isCompleted     | Bool             | A Boolean value determining whether or not the reminder is marked completed. |
 
 ## Events
-When adding, removing, or editing reminders, an app event will be dispatched with the name `EventReminder` along with the collection of reminders on the body.
-
-```javascript
-componentWillMount () {
-  this.eventEmitter = NativeAppEventEmitter.addListener('EventReminder', (reminders) => {...});
-}
-
-componentWillUnmount () {
-  this.eventEmitter.remove();
-}
-```
-
-# Events
 
 | Name        | Body            | Description |
 | :--------------- | :---------------- | :----------- |
