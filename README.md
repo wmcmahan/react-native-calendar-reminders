@@ -25,6 +25,7 @@ const {NativeAppEventEmitter} = React;
 | id              | String (read only)             | Unique id for the reminder. |
 | title           | String             | The title for the reminder. |
 | startDate       | Date             | The start date of the reminder. |
+| dueDate         | Date             | The date by which the reminder should be completed. |
 | completionDate  | Date (read only) | The date on which the reminder was completed. |
 | location        | String           | The location associated with the reminder. |
 | notes           | String           | The notes associated with the reminder. |
@@ -152,7 +153,16 @@ RNCalendarReminders.saveReminder('title', {
 ```
 
 ## Update reminder
-Give the unique reminder **id** to update an existing reminder.
+Pass the unique reminder **id** to update an existing reminder.
+
+```javascript
+RNCalendarReminders.updateReminder('id', {
+  title: 'another title'
+});
+```
+
+Or save save the reminder again with **id** property set in the optional settings.
+
 
 ```javascript
 RNCalendarReminders.saveReminder('title', {
@@ -164,31 +174,25 @@ RNCalendarReminders.saveReminder('title', {
 ```
 
 ## Update reminder alarms
-Give the unique reminder **id** and an array of alarm **options** to update an existing reminder. Note: This will overwrite any alarms already set on the reminder.
+Pass the unique reminder **id** and an array of alarm **options** to update an existing reminder. Note: This will overwrite any alarms already set on the reminder.
 
 ```javascript
 RNCalendarReminders.addAlarms('id', [{
-  id: 'id',
-  alarms: [{
-    date: -2 // or absolute date
-  }]
+  date: -2 // or absolute date
 }]);
 ```
 
 ## Update reminder with added alarm
-Give the unique reminder **id** and alarm **options** object to add new alarm.
+Pass the unique reminder **id** and alarm **options** object to add new alarm.
 
 ```javascript
 RNCalendarReminders.addAlarm('id', {
-  id: 'id',
-  alarms: {
-    date: -3 // or absolute date
-  }
+  date: -3 // or absolute date
 });
 ```
 
 ## Remove reminder
-Give the unique reminder **id** to remove an existing reminder.
+Pass the unique reminder **id** to remove an existing reminder.
 
 ```javascript
 RNCalendarReminders.removeReminder('id');

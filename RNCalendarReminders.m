@@ -12,6 +12,7 @@ static NSString *const _id = @"id";
 static NSString *const _title = @"title";
 static NSString *const _location = @"location";
 static NSString *const _startDate = @"startDate";
+static NSString *const _dueDate = @"dueDate";
 static NSString *const _completionDate = @"completionDate";
 static NSString *const _notes = @"notes";
 static NSString *const _alarms = @"alarms";
@@ -70,13 +71,7 @@ RCT_EXPORT_MODULE()
 #pragma mark -
 #pragma mark Event Store Accessors
 
-- (void)addReminder:(NSString *)title
-          startDate:(NSDateComponents *)startDateComponents
-           location:(NSString *)location
-              notes:(NSString *)notes
-             alarms:(NSArray *)alarms
-         recurrence:(NSString *)recurrence
-        isCompleted:(BOOL)isCompleted
+- (void)addReminder:(NSString *)title details:(NSDictionary *)details
 {
     if (!self.isAccessToEventStoreGranted) {
         return;
@@ -84,52 +79,56 @@ RCT_EXPORT_MODULE()
     
     EKReminder *reminder = [EKReminder reminderWithEventStore:self.eventStore];
     reminder.calendar = [self.eventStore defaultCalendarForNewReminders];
-    reminder.title = title;
-    reminder.location = location;
-    reminder.dueDateComponents = startDateComponents;
-    reminder.startDateComponents = startDateComponents;
-    reminder.completed = isCompleted;
-    reminder.notes = notes;
     
-    if (alarms) {
-        reminder.alarms = [self createReminderAlarms:alarms];
-    }
-    
-    if (recurrence) {
-        EKRecurrenceRule *rule = [self createRecurrenceRule:recurrence];
-        if (rule) {
-            reminder.recurrenceRules = [NSArray arrayWithObject:rule];
-        }
-    }
-    
-    [self saveReminder:reminder];
+    [self buildAndSaveReminder:reminder details:details];
 }
 
 
-- (void)editReminder:(EKReminder *)reminder
-               title:(NSString *)title
-           startDate:(NSDateComponents *)startDateComponents
-            location:(NSString *)location
-               notes:(NSString *)notes
-              alarms:(NSArray *)alarms
-          recurrence:(NSString *)recurrence
-         isCompleted:(BOOL)isCompleted
+- (void)editReminder:(EKReminder *)reminder details:(NSDictionary *)details
 {
     if (!self.isAccessToEventStoreGranted) {
         return;
     }
     
-    reminder.title = title;
-    reminder.location = location;
-    reminder.dueDateComponents = startDateComponents;
-    reminder.startDateComponents = startDateComponents;
-    reminder.completed = isCompleted;
-    reminder.notes = notes;
+    [self buildAndSaveReminder:reminder details:details];
+}
+
+
+-(void)buildAndSaveReminder:(EKReminder *)reminder details:(NSDictionary *)details
+{
+    NSString *title = [RCTConvert NSString:details[_title]];
+    NSString *location = [RCTConvert NSString:details[_location]];
+    NSDate *startDate = [RCTConvert NSDate:details[_startDate]];
+    NSDate *dueDate = [RCTConvert NSDate:details[_dueDate]];
+    NSString *notes = [RCTConvert NSString:details[_notes]];
+    NSArray *alarms = [RCTConvert NSArray:details[_alarms]];
+    NSString *recurrence = [RCTConvert NSString:details[_recurrence]];
+    BOOL *isCompleted = [RCTConvert BOOL:details[_isCompleted]];
     
+    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    
+    if (title) {
+        reminder.title = title;
+    }
+    if (location) {
+        reminder.location = location;
+    }
+    if (startDate) {
+        NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit | NSCalendarUnitTimeZone)
+                                                                     fromDate:startDate];
+        reminder.startDateComponents = startDateComponents;
+    }
+    if (dueDate) {
+        NSDateComponents *dueDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit | NSCalendarUnitTimeZone)
+                                                                   fromDate:dueDate];
+        reminder.dueDateComponents = dueDateComponents;
+    }
+    if (notes) {
+        reminder.notes = notes;
+    }
     if (alarms) {
         reminder.alarms = [self createReminderAlarms:alarms];
     }
-    
     if (recurrence) {
         EKRecurrenceRule *rule = [self createRecurrenceRule:recurrence];
         if (rule) {
@@ -137,12 +136,14 @@ RCT_EXPORT_MODULE()
         }
     }
     
+    reminder.completed = isCompleted;
+    
     [self saveReminder:reminder];
 }
 
-
 -(void)saveReminder:(EKReminder *)reminder
 {
+    
     NSError *error = nil;
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
     
@@ -230,6 +231,7 @@ RCT_EXPORT_MODULE()
     
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
     EKAlarm *reminderAlarm = [self createReminderAlarm:alarm];
+    
     [reminder addAlarm:reminderAlarm];
     
     [self saveReminder:reminder];
@@ -394,6 +396,11 @@ RCT_EXPORT_MODULE()
             [formedReminder setValue:[dateFormatter stringFromDate:reminderStartDate] forKey:_startDate];
         }
         
+        if (reminder.dueDateComponents) {
+            NSDate *reminderDueDate = [calendar dateFromComponents:reminder.dueDateComponents];
+            [formedReminder setValue:[dateFormatter stringFromDate:reminderDueDate] forKey:_dueDate];
+        }
+        
         if (reminder.completionDate) {
             [formedReminder setValue:[dateFormatter stringFromDate:reminder.completionDate] forKey:_completionDate];
         }
@@ -480,37 +487,24 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
 RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details)
 {
     NSString *eventId = [RCTConvert NSString:details[_id]];
-    NSString *location = [RCTConvert NSString:details[_location]];
-    NSDate *startDate = [RCTConvert NSDate:details[_startDate]];
-    NSString *notes = [RCTConvert NSString:details[_notes]];
-    NSArray *alarms = [RCTConvert NSArray:details[_alarms]];
-    NSString *recurrence = [RCTConvert NSString:details[_recurrence]];
-    BOOL *isCompleted = [RCTConvert BOOL:details[_isCompleted]];
     
-    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
-    NSDateComponents *startDateComponents = [gregorianCalendar components:(NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit)
-                                                                 fromDate:startDate];
+    NSMutableDictionary* options = [NSMutableDictionary dictionaryWithDictionary:details];
+    [options setValue:title forKey:_title];
     
     if (eventId) {
         EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
-        [self editReminder:reminder
-                     title:title
-                 startDate:startDateComponents
-                  location:location
-                     notes:notes
-                    alarms:alarms
-                recurrence:recurrence
-               isCompleted:isCompleted];
+        [self editReminder:reminder details:options];
         
     } else {
-        [self addReminder:title
-                startDate:startDateComponents
-                 location:location
-                    notes:notes
-                   alarms:alarms
-               recurrence:recurrence
-              isCompleted:isCompleted];
+        [self addReminder:title details:options];
     }
+}
+
+RCT_EXPORT_METHOD(updateReminder:(NSString *)eventId details:(NSDictionary *)details)
+{
+    EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
+    [self editReminder:reminder details:details];
+    
 }
 
 RCT_EXPORT_METHOD(removeReminder:(NSString *)eventId)
