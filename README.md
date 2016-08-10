@@ -4,7 +4,7 @@ React Native Module for IOS Calendar Reminders
 
 ## Install
 ```
-npm install react-native-calendar-reminders
+npm install --save react-native-calendar-reminders
 ```
 Then add `RNCalendarReminders`, as well as `EventKit.framework` to project libraries.
 
