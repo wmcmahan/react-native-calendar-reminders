@@ -12,10 +12,8 @@ Then add `RNCalendarReminders`, as well as `EventKit.framework` to project libra
 
 Require the `react-native-calendar-reminders` module and React Native's `NativeAppEventEmitter` module.
 ```javascript
-import React from 'react-native';
 import RNCalendarReminders from 'react-native-calendar-reminders';
-
-const {NativeAppEventEmitter} = React;
+import {NativeAppEventEmitter} from 'react-native';
 ```
 
 ## Properties
