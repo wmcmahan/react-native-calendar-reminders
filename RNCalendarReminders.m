@@ -17,6 +17,7 @@ static NSString *const _completionDate = @"completionDate";
 static NSString *const _notes = @"notes";
 static NSString *const _alarms = @"alarms";
 static NSString *const _recurrence = @"recurrence";
+static NSString *const _recurrenceInterval = @"recurrenceInterval";
 static NSString *const _isCompleted = @"isCompleted";
 
 @implementation RNCalendarReminders
@@ -103,6 +104,8 @@ RCT_EXPORT_MODULE()
     NSString *notes = [RCTConvert NSString:details[_notes]];
     NSArray *alarms = [RCTConvert NSArray:details[_alarms]];
     NSString *recurrence = [RCTConvert NSString:details[_recurrence]];
+    NSString *recurrenceIntervalString = [RCTConvert NSString:details[_recurrenceInterval]];
+    NSInteger recurrenceInterval = [recurrenceIntervalString integerValue];
     BOOL *isCompleted = [RCTConvert BOOL:details[_isCompleted]];
     
     NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
@@ -130,7 +133,7 @@ RCT_EXPORT_MODULE()
         reminder.alarms = [self createReminderAlarms:alarms];
     }
     if (recurrence) {
-        EKRecurrenceRule *rule = [self createRecurrenceRule:recurrence];
+        EKRecurrenceRule *rule = [self createRecurrenceRule:recurrence :recurrenceInterval];
         if (rule) {
             reminder.recurrenceRules = [NSArray arrayWithObject:rule];
         }
@@ -267,14 +270,14 @@ RCT_EXPORT_MODULE()
     return recurrence;
 }
 
--(EKRecurrenceRule *)createRecurrenceRule:(NSString *)frequency
+-(EKRecurrenceRule *)createRecurrenceRule:(NSString *)frequency :(int)recurrenceInterval
 {
     EKRecurrenceRule *rule = nil;
     NSArray *validFrequencyTypes = @[@"daily", @"weekly", @"monthly", @"yearly"];
     
     if ([validFrequencyTypes containsObject:frequency]) {
         rule = [[EKRecurrenceRule alloc] initRecurrenceWithFrequency:[self frequencyMatchingName:frequency]
-                                                            interval:1
+                                                            interval:recurrenceInterval
                                                                  end:nil];
     }
     return rule;

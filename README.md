@@ -29,6 +29,7 @@ import {NativeAppEventEmitter} from 'react-native';
 | notes           | String           | The notes associated with the reminder. |
 | alarms          | Array            | The alarms associated with the reminder, as an array of alarm objects. |
 | recurrence      | String           | The simple recurrence frequency of the reminder ['daily', 'weekly', 'monthly', 'yearly']. |
+| recurrenceInterval | String        | The interval between instances of this recurrence. For example, a weekly recurrence rule with an interval of 2 occurs every other week. Must be greater than 0. |
 | isCompleted     | Bool             | A Boolean value determining whether or not the reminder is marked completed. |
 
 ## Events
@@ -147,6 +148,21 @@ RNCalendarReminders.saveReminder('title', {
     date: -1 // or absolute date
   }],
   recurrence: 'daily'
+});
+```
+
+Example with recurrenceInterval:
+
+```javascript
+RNCalendarReminders.saveReminder('title', {
+  location: 'location',
+  notes: 'notes',
+  startDate: '2016-10-01T09:45:00.000UTC',
+  alarms: [{
+    date: -1 // or absolute date
+  }],
+  recurrence: 'weekly',
+  recurrenceInterval: '2'
 });
 ```
 
