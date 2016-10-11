@@ -60,7 +60,6 @@ RCT_EXPORT_MODULE()
             self.isAccessToEventStoreGranted = NO;
             return @"restricted";
         case EKAuthorizationStatusAuthorized:
-            [self addNotificationCenter];
             self.isAccessToEventStoreGranted = YES;
             return @"authorized";
         case EKAuthorizationStatusNotDetermined: {
@@ -423,36 +422,6 @@ RCT_EXPORT_MODULE()
     }
 
     return [serializedReminders copy];
-}
-
-
-#pragma mark -
-#pragma mark notifications
-
-- (void)addNotificationCenter
-{
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(calendarEventReminderReceived:)
-                                                 name:EKEventStoreChangedNotification
-                                               object:nil];
-}
-
-- (void)calendarEventReminderReceived:(NSNotification *)notification
-{
-    NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
-
-    __weak RNCalendarReminders *weakSelf = self;
-    [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"remindersChanged"
-                                                             body:[weakSelf serializeReminders:reminders]];
-        });
-    }];
-}
-
-- (void) dealloc
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark -
