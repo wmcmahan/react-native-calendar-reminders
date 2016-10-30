@@ -60,7 +60,6 @@ RCT_EXPORT_MODULE()
             self.isAccessToEventStoreGranted = NO;
             return @"restricted";
         case EKAuthorizationStatusAuthorized:
-            [self addNotificationCenter];
             self.isAccessToEventStoreGranted = YES;
             return @"authorized";
         case EKAuthorizationStatusNotDetermined: {
@@ -72,30 +71,31 @@ RCT_EXPORT_MODULE()
 #pragma mark -
 #pragma mark Event Store Accessors
 
-- (void)addReminder:(NSString *)title details:(NSDictionary *)details
+- (NSDictionary *)addReminder:(NSString *)title details:(NSDictionary *)details
 {
-    if (!self.isAccessToEventStoreGranted) {
-        return;
+    if ([[self authorizationStatusForEventStore] isEqualToString:@"granted"]) {
+        return @{@"success": [NSNull null], @"error": @"unauthorized to access reminders"};
     }
 
     EKReminder *reminder = [EKReminder reminderWithEventStore:self.eventStore];
     reminder.calendar = [self.eventStore defaultCalendarForNewReminders];
-    [self buildAndSaveReminder:reminder details:details];
+
+    return [self buildAndSaveReminder:reminder details:details];
 }
 
 
-- (void)editReminder:(EKReminder *)reminder details:(NSDictionary *)details
+- (NSDictionary *)editReminder:(EKReminder *)reminder details:(NSDictionary *)details
 {
-    if (!self.isAccessToEventStoreGranted) {
-        return;
+    if ([[self authorizationStatusForEventStore] isEqualToString:@"granted"]) {
+        return @{@"success": [NSNull null], @"error": @"unauthorized to access reminders"};
     }
 
-    [self buildAndSaveReminder:reminder details:details];
+    return [self buildAndSaveReminder:reminder details:details];
 }
 
-
--(void)buildAndSaveReminder:(EKReminder *)reminder details:(NSDictionary *)details
+- (NSDictionary *)buildAndSaveReminder:(EKReminder *)reminder details:(NSDictionary *)details
 {
+    NSString *eventId = [RCTConvert NSString:details[_id]];
     NSString *title = [RCTConvert NSString:details[_title]];
     NSString *location = [RCTConvert NSString:details[_location]];
     NSDate *startDate = [RCTConvert NSDate:details[_startDate]];
@@ -140,38 +140,43 @@ RCT_EXPORT_MODULE()
 
     reminder.completed = isCompleted;
 
-    [self saveReminder:reminder];
+    return [self saveReminder:reminder];
 }
 
--(void)saveReminder:(EKReminder *)reminder
+- (NSDictionary *)saveReminder:(EKReminder *)reminder
 {
+    NSMutableDictionary *response = [NSMutableDictionary dictionaryWithDictionary:@{@"success": [NSNull null], @"error": [NSNull null]}];
+
     NSError *error = nil;
     BOOL success = [self.eventStore saveReminder:reminder commit:YES error:&error];
 
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveError"
-                                                     body:@{@"error": [error.userInfo valueForKey:@"NSLocalizedDescription"]}];
+        [response setValue:[error.userInfo valueForKey:@"NSLocalizedDescription"] forKey:@"error"];
     } else {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveSuccess"
-                                                     body:reminder.calendarItemIdentifier];
+        [response setValue:reminder.calendarItemIdentifier forKey:@"success"];
     }
+    return [response copy];
 }
 
 
-- (void)deleteReminder:(NSString *)eventId
+- (NSDictionary *)deleteReminder:(NSString *)eventId
 {
-    if (!self.isAccessToEventStoreGranted) {
-        return;
+    if ([[self authorizationStatusForEventStore] isEqualToString:@"granted"]) {
+        return @{@"success": [NSNull null], @"error": @"unauthorized to access reminders"};
     }
+
+    NSMutableDictionary *response = [NSMutableDictionary dictionaryWithDictionary:@{@"success": [NSNull null], @"error": [NSNull null]}];
 
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
     NSError *error = nil;
     BOOL success = [self.eventStore removeReminder:reminder commit:YES error:&error];
 
     if (!success) {
-        [self.bridge.eventDispatcher sendAppEventWithName:@"reminderSaveError"
-                                                     body:@{@"error": [error.userInfo valueForKey:@"NSLocalizedDescription"]}];
+        [response setValue:[error.userInfo valueForKey:@"NSLocalizedDescription"] forKey:@"error"];
+    } else {
+        [response setValue:@YES forKey:@"success"];
     }
+    return [response copy];
 }
 
 #pragma mark -
@@ -224,10 +229,10 @@ RCT_EXPORT_MODULE()
     return [reminderAlarms copy];
 }
 
-- (void)addReminderAlarm:(NSString *)eventId alarm:(NSDictionary *)alarm
+- (NSDictionary *)addReminderAlarm:(NSString *)eventId alarm:(NSDictionary *)alarm
 {
-    if (!self.isAccessToEventStoreGranted) {
-        return;
+    if ([[self authorizationStatusForEventStore] isEqualToString:@"granted"]) {
+        return @{@"success": [NSNull null], @"error": @"unauthorized to access reminders"};
     }
 
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
@@ -235,20 +240,20 @@ RCT_EXPORT_MODULE()
 
     [reminder addAlarm:reminderAlarm];
 
-    [self saveReminder:reminder];
+    return [self saveReminder:reminder];
 }
 
 
-- (void)addReminderAlarms:(NSString *)eventId alarms:(NSArray *)alarms
+- (NSDictionary *)addReminderAlarms:(NSString *)eventId alarms:(NSArray *)alarms
 {
-    if (!self.isAccessToEventStoreGranted) {
-        return;
+    if ([[self authorizationStatusForEventStore] isEqualToString:@"granted"]) {
+        return @{@"success": [NSNull null], @"error": @"unauthorized to access reminders"};
     }
 
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
     reminder.alarms = [self createReminderAlarms:alarms];
 
-    [self saveReminder:reminder];
+    return [self saveReminder:reminder];
 }
 
 #pragma mark -
@@ -419,62 +424,36 @@ RCT_EXPORT_MODULE()
     return [serializedReminders copy];
 }
 
-
-#pragma mark -
-#pragma mark notifications
-
-- (void)addNotificationCenter
-{
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(calendarEventReminderReceived:)
-                                                 name:EKEventStoreChangedNotification
-                                               object:nil];
-}
-
-- (void)calendarEventReminderReceived:(NSNotification *)notification
-{
-    NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
-
-    __weak RNCalendarReminders *weakSelf = self;
-    [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.bridge.eventDispatcher sendAppEventWithName:@"remindersChanged"
-                                                             body:[weakSelf serializeReminders:reminders]];
-        });
-    }];
-}
-
-- (void) dealloc
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
 #pragma mark -
 #pragma mark RCT Exports
 
-RCT_EXPORT_METHOD(authorizationStatus:(RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(authorizationStatus:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSString *status = [self authorizationStatusForEventStore];
-    callback(@[@{@"status": status}]);
+    if (status) {
+        resolve(status);
+    } else {
+        reject(@"error", @"authorization status error", nil);
+    }
 }
 
-RCT_EXPORT_METHOD(authorizeEventStore:(RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(authorizeEventStore:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     __weak RNCalendarReminders *weakSelf = self;
     [self.eventStore requestAccessToEntityType:EKEntityTypeReminder completion:^(BOOL granted, NSError *error) {
-        NSString *status = granted ? @"authorized" : @"denied";
         dispatch_async(dispatch_get_main_queue(), ^{
             NSString *status = granted ? @"authorized" : @"denied";
             weakSelf.isAccessToEventStoreGranted = granted;
             if (!error) {
-                [weakSelf addNotificationCenter];
-                callback(@[@{@"status": status}]);
+                resolve(status);
+            } else {
+                reject(@"error", @"authorization request error", error);
             }
         });
     }];
 }
 
-RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(fetchAllReminders:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
 
@@ -482,47 +461,122 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTResponseSenderBlock)callback)
     [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
         dispatch_async(dispatch_get_main_queue(), ^{
             weakSelf.reminders = reminders;
-            callback(@[[weakSelf serializeReminders:reminders]]);
+
+            if (reminders) {
+                resolve([weakSelf serializeReminders:reminders]);
+            } else {
+                reject(@"error", @"calendar reminders request error", nil);
+            }
         });
     }];
 }
 
-RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details)
+RCT_EXPORT_METHOD(fetchCompletedReminders:(NSDate *)startDate endDate:(NSDate *)endDate resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSPredicate *predicate = [self.eventStore predicateForCompletedRemindersWithCompletionDateStarting:startDate
+                                                                                                ending:endDate
+                                                                                             calendars:nil];
+
+    __weak RNCalendarReminders *weakSelf = self;
+    [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            weakSelf.reminders = reminders;
+
+            if (reminders) {
+                resolve([weakSelf serializeReminders:reminders]);
+            } else {
+                reject(@"error", @"calendar reminders request error", nil);
+            }
+        });
+    }];
+}
+
+RCT_EXPORT_METHOD(fetchIncompleteReminders:(NSDate *)startDate endDate:(NSDate *)endDate resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSPredicate *predicate = [self.eventStore predicateForIncompleteRemindersWithDueDateStarting:startDate
+                                                                                          ending:endDate
+                                                                                       calendars:nil];
+
+    __weak RNCalendarReminders *weakSelf = self;
+    [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            weakSelf.reminders = reminders;
+
+            if (reminders) {
+                resolve([weakSelf serializeReminders:reminders]);
+            } else {
+                reject(@"error", @"calendar reminders request error", nil);
+            }
+        });
+    }];
+}
+
+RCT_EXPORT_METHOD(saveReminder:(NSString *)title details:(NSDictionary *)details resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSString *eventId = [RCTConvert NSString:details[_id]];
 
     NSMutableDictionary* options = [NSMutableDictionary dictionaryWithDictionary:details];
     [options setValue:title forKey:_title];
 
+    NSDictionary *response = nil;
+
     if (eventId) {
         EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
-        [self editReminder:reminder details:options];
-
+        response = [self editReminder:reminder details:options];
     } else {
-        [self addReminder:title details:options];
+        response = [self addReminder:title details:options];
+    }
+
+    if ([response valueForKey:@"success"] != [NSNull null]) {
+        resolve([response valueForKey:@"success"]);
+    } else {
+        reject(@"error", [response valueForKey:@"error"], nil);
     }
 }
 
-RCT_EXPORT_METHOD(updateReminder:(NSString *)eventId details:(NSDictionary *)details)
+RCT_EXPORT_METHOD(updateReminder:(NSString *)eventId details:(NSDictionary *)details resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     EKReminder *reminder = (EKReminder *)[self.eventStore calendarItemWithIdentifier:eventId];
-    [self editReminder:reminder details:details];
+    NSDictionary *response = [self editReminder:reminder details:details];
 
+    if ([response valueForKey:@"success"] != [NSNull null]) {
+        resolve([response valueForKey:@"success"]);
+    } else {
+        reject(@"error", [response valueForKey:@"error"], nil);
+    }
 }
 
-RCT_EXPORT_METHOD(removeReminder:(NSString *)eventId)
+RCT_EXPORT_METHOD(removeReminder:(NSString *)eventId resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    [self deleteReminder:eventId];
+    NSDictionary *response = [self deleteReminder:eventId];
+
+    if ([response valueForKey:@"success"] != [NSNull null]) {
+        resolve([response valueForKey:@"success"]);
+    } else {
+        reject(@"error", [response valueForKey:@"error"], nil);
+    }
 }
 
-RCT_EXPORT_METHOD(addAlarm:(NSString *)eventId alarm:(NSDictionary *)alarm)
+RCT_EXPORT_METHOD(addAlarm:(NSString *)eventId alarm:(NSDictionary *)alarm resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    [self addReminderAlarm:eventId alarm:alarm];
+    NSDictionary *response = [self addReminderAlarm:eventId alarm:alarm];
+
+    if ([response valueForKey:@"success"] != [NSNull null]) {
+        resolve([response valueForKey:@"success"]);
+    } else {
+        reject(@"error", [response valueForKey:@"error"], nil);
+    }
 }
 
-RCT_EXPORT_METHOD(addAlarms:(NSString *)eventId alarms:(NSArray *)alarms)
+RCT_EXPORT_METHOD(addAlarms:(NSString *)eventId alarms:(NSArray *)alarms resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    [self addReminderAlarms:eventId alarms:alarms];
+    NSDictionary *response = [self addReminderAlarms:eventId alarms:alarms];
+
+    if ([response valueForKey:@"success"] != [NSNull null]) {
+        resolve([response valueForKey:@"success"]);
+    } else {
+        reject(@"error", [response valueForKey:@"error"], nil);
+    }
 }
 
 @end
