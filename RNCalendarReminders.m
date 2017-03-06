@@ -1,5 +1,5 @@
 #import "RNCalendarReminders.h"
-#import "RCTConvert.h"
+#import <React/RCTConvert.h>
 #import <EventKit/EventKit.h>
 
 @interface RNCalendarReminders ()

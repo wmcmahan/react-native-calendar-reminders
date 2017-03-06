@@ -1,4 +1,4 @@
-# React-Native-Calendar-Reminders
+# React Native Calendar Reminders
 React Native Module for IOS Calendar Reminders
 
 ## Install
@@ -6,7 +6,13 @@ React Native Module for IOS Calendar Reminders
 npm install --save react-native-calendar-reminders
 ```
 
-Then add `RNCalendarReminders`, as well as `EventKit.framework` to project libraries.
+## Link Library
+
+```
+react-native link react-native-calendar-reminders
+```
+
+## plist - Usage Description
 
 Setting up privacy usage descriptions may also be require depending on which iOS version is supported. This involves updating the Property List, `Info.plist`, with the corresponding key for the EKEventStore api. [Info.plist reference](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/CocoaKeys.html).
 
@@ -15,11 +21,13 @@ For updating the `Info.plist` key/value via Xcode, add a `Privacy - Reminders Us
 ## Usage
 
 Require the `react-native-calendar-reminders` module.
+
 ```javascript
 import RNCalendarReminders from 'react-native-calendar-reminders';
 ```
 
-> **BREAKING CHANGES**: Starting from `1.0.0`, this package will use Promises instead of Events.
+- React-Native 0.40 and above use 1.1.0 and above
+- React-Native 0.39 and below use 1.0.0 and below
 
 
 ## Properties
