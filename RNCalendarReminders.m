@@ -19,6 +19,7 @@ static NSString *const _alarms = @"alarms";
 static NSString *const _recurrence = @"recurrence";
 static NSString *const _recurrenceInterval = @"recurrenceInterval";
 static NSString *const _isCompleted = @"isCompleted";
+static NSString *const _priority = @"priority";
 
 @implementation RNCalendarReminders
 
@@ -105,6 +106,7 @@ RCT_EXPORT_MODULE()
     NSString *recurrence = [RCTConvert NSString:details[_recurrence]];
     NSInteger *recurrenceInterval = [RCTConvert NSInteger:details[_recurrenceInterval]];
     BOOL *isCompleted = [RCTConvert BOOL:details[_isCompleted]];
+    NSUInteger priority = [RCTConvert NSUInteger:details[_priority]];
 
     NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
 
@@ -139,6 +141,8 @@ RCT_EXPORT_MODULE()
     }
 
     reminder.completed = isCompleted;
+
+    reminder.priority = priority;
 
     return [self saveReminder:reminder];
 }
@@ -329,7 +333,8 @@ RCT_EXPORT_MODULE()
         NSMutableDictionary *formedReminder = [NSMutableDictionary dictionaryWithDictionary:emptyReminder];
 
         [formedReminder setValue:@(reminder.isCompleted) forKey:@"isCompleted"];
-
+        [formedReminder setValue:@(reminder.priority) forKey:_priority];
+        
         if (reminder.calendarItemIdentifier) {
             [formedReminder setValue:reminder.calendarItemIdentifier forKey:_id];
         }
