@@ -382,7 +382,7 @@ RCT_EXPORT_MODULE()
                             break;
                     }
                     [formattedAlarm setValue:@{
-                                               @"title": alarm.structuredLocation.title,
+                                               @"title": alarm.structuredLocation.title ?: @"",
                                                @"proximity": proximity,
                                                @"radius": @(alarm.structuredLocation.radius),
                                                @"coords": @{
