@@ -35,6 +35,7 @@ import RNCalendarReminders from 'react-native-calendar-reminders';
 | Property        | Value            | Description |
 | :--------------- | :---------------- | :----------- |
 | id              | String (read only)             | Unique id for the reminder. |
+| calendarId      | String (write only)| Unique id for the calendar where the reminder will be saved. Defaults to the device's default calendar. |
 | title           | String             | The title for the reminder. |
 | startDate       | Date             | The start date of the reminder. |
 | dueDate         | Date             | The date by which the reminder should be completed. |
@@ -45,6 +46,7 @@ import RNCalendarReminders from 'react-native-calendar-reminders';
 | recurrence      | String           | The simple recurrence frequency of the reminder ['daily', 'weekly', 'monthly', 'yearly']. |
 | recurrenceInterval | String        | The interval between instances of this recurrence. For example, a weekly recurrence rule with an interval of 2 occurs every other week. Must be greater than 0. |
 | isCompleted     | Bool             | A Boolean value determining whether or not the reminder is marked completed. |
+| calendar     | Object (read-only)  | The calendar containing the reminder. |
 
 
 ## authorizationStatus
@@ -91,6 +93,31 @@ RNCalendarReminders.authorizeEventStore()
   });
 ```
 
+## findReminderById
+Find calendar reminder by id.
+Returns a promise fulfilled with found reminder.
+
+```javascript
+RNCalendarReminders.findEventById(id)
+```
+
+Parameters:
+ - id: String - The reminder's unique id.
+
+Returns: Promise
+ - fulfilled: Object | null - reminder.
+ - rejected: Error
+
+Example:
+```javascript
+RNCalendarReminders.findEventById('FE6B128F-C0D8-4FB8-8FC6-D1D6BA015CDE')
+  .then(event => {
+    // handle reminder
+  })
+  .catch(error => {
+   // handle error
+  });
+```
 
 ## fetchAllReminders
 Find all reminders.
@@ -99,7 +126,7 @@ Find all reminders.
 RNCalendarReminders.fetchAllReminders()
 ```
 
-Returns: Promise 
+Returns: Promise
  - fulfilled: Array - List of reminders
  - rejected: Error
 
@@ -397,5 +424,28 @@ RNCalendarReminders.removeReminder('465E5BEB-F8B0-49D6-9174-272A4E5DEEFC')
   })
   .catch(error => {
    // handle error
+  });
+```
+
+## findCalendars
+Finds all the calendars on the device.
+
+```javascript
+RNCalendarReminders.findCalendars();
+```
+
+Returns: Promise
+ - fulfilled: Array - A list of known calendars on the device
+ - rejected: Error
+
+Example:
+
+```javascript
+RNCalendarEvents.findCalendars()
+  .then(calendars => {
+    // handle calendars
+  })
+  .catch(error => {
+    // handle error
   });
 ```
