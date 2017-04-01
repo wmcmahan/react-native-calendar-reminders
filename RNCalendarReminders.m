@@ -471,6 +471,21 @@ RCT_EXPORT_MODULE()
 
 }
 
+- (NSArray<NSDictionary *> *)serializeCalendars:(NSArray<EKCalendar *> *)calendars
+{
+    NSMutableArray *serializedCalendars = [[NSMutableArray alloc] init];
+    
+    for (EKCalendar *calendar in calendars) {
+        id serializedCalendar = @{
+                                  @"title": calendar.title,
+                                  @"calendarIdentifier": calendar.calendarIdentifier
+                                  };
+        [serializedCalendars addObject:serializedCalendar];
+    }
+    
+    return serializedCalendars;
+}
+
 #pragma mark -
 #pragma mark RCT Exports
 
@@ -500,6 +515,12 @@ RCT_EXPORT_METHOD(authorizeEventStore:(RCTPromiseResolveBlock)resolve rejecter:(
     }];
 }
 
+RCT_EXPORT_METHOD(fetchReminderCalendars:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSArray<EKCalendar *> *calendars = [self.eventStore calendarsForEntityType:EKEntityTypeReminder];
+    resolve([self serializeCalendars:calendars]);
+}
+
 RCT_EXPORT_METHOD(fetchAllReminders:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSPredicate *predicate = [self.eventStore predicateForRemindersInCalendars:nil];
@@ -518,11 +539,20 @@ RCT_EXPORT_METHOD(fetchAllReminders:(RCTPromiseResolveBlock)resolve rejecter:(RC
     }];
 }
 
-RCT_EXPORT_METHOD(fetchCompletedReminders:(NSDate *)startDate endDate:(NSDate *)endDate resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(fetchCompletedReminders:(NSDate *)startDate endDate:(NSDate *)endDate calendarIdentifiers:(NSArray<NSString *> *)calendarIdentifiers resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
+    NSMutableArray<EKCalendar *> *calendars = nil;
+    if (calendarIdentifiers) {
+        calendars = [NSMutableArray array];
+        for (NSString *calendarIdentifier in calendarIdentifiers) {
+            EKCalendar *calendar = [self.eventStore calendarWithIdentifier:calendarIdentifier];
+            [calendars addObject:calendar];
+        }
+    }
+
     NSPredicate *predicate = [self.eventStore predicateForCompletedRemindersWithCompletionDateStarting:startDate
                                                                                                 ending:endDate
-                                                                                             calendars:nil];
+                                                                                             calendars:calendars];
 
     __weak RNCalendarReminders *weakSelf = self;
     [self.eventStore fetchRemindersMatchingPredicate:predicate completion:^(NSArray *reminders) {
